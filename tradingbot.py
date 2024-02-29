@@ -3,6 +3,8 @@ from lumibot.backtesting import YahooDataBacktesting
 from lumibot.strategies.strategy import Strategy
 from lumibot.traders import Trader
 from datetime import datetime 
+from alpaca_trade_api import REST
+from timedelta import Timedelta
 
 # Generated via Alpaca
 API_KEY = "PKNBRV0GEQP7Q5OQXBUQ" 
@@ -21,6 +23,7 @@ class MLTrader(Strategy):
         self.sleeptime = "24hr"  ## Dictates how frequently the bot will trade
         self.last_trade = None   ## This captures our last trade, incase we need to undo our buys/sells
         self.cash_at_risk = cash_at_risk
+        self.api = REST(base_url = BASE_URL, key_id=API_KEY, secret_key=API_SECRET)
 
     def position_sizing(self):
         cash = self.get_cash()
@@ -28,11 +31,26 @@ class MLTrader(Strategy):
         quantity = cash * self.cash_At_risk / last_price
         return cash, last_price, quantity
         
+    def get_dates():
+        today = self.get_datetime()
+        three_days_prior = today - Timedelta(days=3)
+        return today.strftime('%Y-%m-%d'),three_days_prior('%Y-%m-%d')
+    
+    def get_news(self):
+        today, three_days_prior = self.get_dates()
+        news = self.api.get_news(symbol=self.symbol, 
+                                 start=three_days_prior, 
+                                 end=today)
+        news= [ev.__dict__["raw"]["headline"]for ev in news]
+        return news
+
     def on_trading_iteration(self):  ## This iteration will execute everytime new data is retrieved from the data source
         cash, last_price, quantity = self.position_sizing()
 
-        if cash > last_price: # We're not just buying when we don't have cash
+        if cash > last_price: ## We're not just buying when we don't have cash
           if self.last_trade == None:
+              news = self.get_news()
+              print(news)
               order = self.create_order(
                  self.symbol,
                  quantity,
