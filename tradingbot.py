@@ -5,6 +5,7 @@ from lumibot.traders import Trader
 from datetime import datetime 
 from alpaca_trade_api import REST
 from timedelta import Timedelta
+from finbert_utils import estimate_sentiment
 
 # Generated via Alpaca
 API_KEY = "PKNBRV0GEQP7Q5OQXBUQ" 
@@ -36,21 +37,22 @@ class MLTrader(Strategy):
         three_days_prior = today - Timedelta(days=3)
         return today.strftime('%Y-%m-%d'),three_days_prior('%Y-%m-%d')
     
-    def get_news(self):
+    def get_sentiment(self):
         today, three_days_prior = self.get_dates()
         news = self.api.get_news(symbol=self.symbol, 
                                  start=three_days_prior, 
                                  end=today)
         news= [ev.__dict__["raw"]["headline"]for ev in news]
-        return news
+        probability,sentiment = estimate_sentiment(news)
+        return probability, sentiment
 
     def on_trading_iteration(self):  ## This iteration will execute everytime new data is retrieved from the data source
         cash, last_price, quantity = self.position_sizing()
 
         if cash > last_price: ## We're not just buying when we don't have cash
           if self.last_trade == None:
-              news = self.get_news()
-              print(news)
+              probability, sentiment = self.get_sentiment()
+              print(probability, sentiment)
               order = self.create_order(
                  self.symbol,
                  quantity,
