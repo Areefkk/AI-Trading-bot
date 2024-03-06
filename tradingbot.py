@@ -50,19 +50,33 @@ class MLTrader(Strategy):
         cash, last_price, quantity = self.position_sizing()
 
         if cash > last_price: ## We're not just buying when we don't have cash
-          if self.last_trade == None:
-              probability, sentiment = self.get_sentiment()
-              print(probability, sentiment)
-              order = self.create_order(
-                 self.symbol,
-                 quantity,
-                 "buy",
-                 type="bracket"
-                 take_profit_price= last_price*1.20, 
-                 stop_loss_price-last_price*.95 
-                 )
-             self.submit_order(order)
-             self.last_trade = "buy"
+            if sentiment == "positive" and probability > .999: 
+                if self.last_order == "sell":
+                    self.sell_all() 
+                order = self.create_order(
+                    self.symbol,
+                    quantity,
+                    "buy",
+                    type="bracket"
+                    take_profit_price= last_price*1.20, 
+                    stop_loss_price-last_price*.95 
+                    )
+                self.submit_order(order)
+                self.last_trade = "buy"
+            elif sentiment == "negative" and probability > .999: 
+                if self.last_order == "buy":
+                    self.sell_all() 
+                order = self.create_order(
+                    self.symbol,
+                    quantity,
+                    "sell",
+                    type="bracket"
+                    take_profit_price= last_price*.8, 
+                    stop_loss_price-last_price*1.05
+                    )
+                self.submit_order(order)
+                self.last_trade = "sell"
+        
 
 start_date = datetime(2023,12,15)    
 end_date = datetime(2023,12,30)  
