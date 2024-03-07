@@ -90,4 +90,3 @@ strategy.backtest(
     end_date,
     parameters={}
 )
-
